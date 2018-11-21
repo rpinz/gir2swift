@@ -115,7 +115,7 @@ public extension GIR {
 /// Swift extentsion for things
 public extension GIR.Thing {
     /// return a name with reserved Ref or Protocol suffixes escaped
-    public var escapedName: String {
+    var escapedName: String {
         let na = name.typeEscaped
         return na
     }
@@ -125,27 +125,27 @@ public extension GIR.Thing {
 /// Swift extension for arguments
 public extension GIR.Argument {
     //// return the known type of the argument (nil if not known)
-    public var knownType: GIR.Datatype? { return GIR.KnownTypes[type.isEmpty ? ctype : type] }
+    var knownType: GIR.Datatype? { return GIR.KnownTypes[type.isEmpty ? ctype : type] }
 
     //// return the known class/record of the argument (nil if not known)
-    public var knownRecord: GIR.Record? { return GIR.KnownRecords[type.isEmpty ? ctype : type] }
+    var knownRecord: GIR.Record? { return GIR.KnownRecords[type.isEmpty ? ctype : type] }
 
     /// indicates whether the receiver is a known type
-    public var isKnownType: Bool { return knownType != nil }
+    var isKnownType: Bool { return knownType != nil }
 
     /// indicates whether the receiver is a known class or record
-    public var isKnownRecord: Bool { return knownRecord != nil }
+    var isKnownRecord: Bool { return knownRecord != nil }
 
     /// indicates whether the receiver is any known kind of pointer
-    public var isAnyKindOfPointer: Bool {
+    var isAnyKindOfPointer: Bool {
         return ctype.isGPointer || ctype.isPointer || ctype.isCastablePointer || type.isSwiftPointer || type.hasSuffix("Func")
     }
 
     /// indicates whether the receiver is an array of scalar values
-    public var isScalarArray: Bool { return isArray && !isAnyKindOfPointer }
+    var isScalarArray: Bool { return isArray && !isAnyKindOfPointer }
 
     /// return a non-clashing argument name
-    public var nonClashingName: String {
+    var nonClashingName: String {
         let sw = name.swift
         let nt = sw + (sw.isKnownType ? "_" : "")
         let ct = ctype.innerCType.swiftType // swift name for C type
@@ -157,10 +157,10 @@ public extension GIR.Argument {
     }
 
     /// return the non-prefixed argument name
-    public var argumentName: String { return nonClashingName }
+    var argumentName: String { return nonClashingName }
 
     /// return the, potentially prefixed argument name to use in a method declaration
-    public var prefixedArgumentName: String {
+    var prefixedArgumentName: String {
         let name = argumentName
         let swname = name.camelCase.swift
         let prefixedname = name == swname ? name : (swname + " " + name)
@@ -168,7 +168,7 @@ public extension GIR.Argument {
     }
 
     /// return the swift (known) type of the receiver
-    public var argumentType: String {
+    var argumentType: String {
         let ct = ctype
         let t = type.isEmpty ? ct : type
         let array = isScalarArray
@@ -180,7 +180,7 @@ public extension GIR.Argument {
     }
 
     /// return whether the receiver is an instance of the given record (class)
-    public func isInstanceOf(_ record: GIR.Record?) -> Bool {
+    func isInstanceOf(_ record: GIR.Record?) -> Bool {
         if let r = record, r.name == type.withoutNameSpace {
             return true
         } else {
@@ -189,7 +189,7 @@ public extension GIR.Argument {
     }
 
     /// return whether the receiver is an instance of the given record (class) or any of its ancestors
-    public func isInstanceOfHierarchy(_ record: GIR.Record) -> Bool {
+    func isInstanceOfHierarchy(_ record: GIR.Record) -> Bool {
         if isInstanceOf(record) { return true }
         guard let parent = record.parentType else { return false }
         return isInstanceOfHierarchy(parent)
@@ -199,22 +199,22 @@ public extension GIR.Argument {
 
 /// Swift extension for methods
 public extension GIR.Method {
-    public var isDesignatedConstructor: Bool {
+    var isDesignatedConstructor: Bool {
         return name == "new"
     }
 
     /// is this a bare factory method that is not the default constructor
-    public var isBareFactory: Bool {
+    var isBareFactory: Bool {
         return args.isEmpty && !isDesignatedConstructor
     }
 
     /// return whether the method is a constructor of the given record
-    public func isConstructorOf(_ record: GIR.Record?) -> Bool {
+    func isConstructorOf(_ record: GIR.Record?) -> Bool {
         return record != nil && returns.isInstanceOfHierarchy(record!) && !(args.first?.isInstanceOf(record) ?? false)
     }
 
     /// return whether the method is a factory of the given record
-    public func isFactoryOf(_ record: GIR.Record?) -> Bool {
+    func isFactoryOf(_ record: GIR.Record?) -> Bool {
         return !isDesignatedConstructor && isConstructorOf(record)
     }
 }
@@ -305,16 +305,16 @@ public func getterSetterPairs(for allMethods: [GIR.Method]) -> [GetterSetterPair
 /// Swift extension for records
 public extension GIR.Record {
     /// swift node name for this record
-    public var swift: String { return name.swift }
+    var swift: String { return name.swift }
 
     /// swift protocol name for this record
-    public var protocolName: String { return swift + "Protocol" }
+    var protocolName: String { return swift + "Protocol" }
 
     /// swift struct name for this record
-    public var structName: String { return swift + "Ref" }
+    var structName: String { return swift + "Ref" }
 
     /// swift class name for this record
-    public var className: String { return swift }
+    var className: String { return swift }
 }
 
 
