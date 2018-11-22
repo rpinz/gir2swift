@@ -41,7 +41,6 @@ extension String {
 #if swift(>=4.2)
 #if compiler(>=5.0)
         self = String(cString: UnsafePointer<CChar>(cs))
-#endif
 #else
         self = String(cString: UnsafePointer(cs))
 #endif
