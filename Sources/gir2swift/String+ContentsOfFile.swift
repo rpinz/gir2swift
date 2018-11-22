@@ -38,8 +38,13 @@ extension String {
         }
         let cs = mem.assumingMemoryBound(to: CChar.self)
         cs[len] = 0
+#if swift(>=4.2)
 #if compiler(>=5.0)
         self = String(cString: UnsafePointer<CChar>(cs))
+#endif
+#else
+        self = String(cString: UnsafePointer(cs))
+#endif
 #else
         self = String(cString: UnsafePointer(cs))
 #endif
