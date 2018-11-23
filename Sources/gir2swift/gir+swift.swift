@@ -406,17 +406,21 @@ public func swiftCode(_ e: GIR.Enumeration) -> String {
 /// Swift code representation of an enum value
 public func valueCode(_ indentation: String) -> (GIR.Enumeration.Member) -> String {
     return { (m: GIR.Enumeration.Member) -> String in
-        swiftCode(m, indentation + "public static let \(m.name.swiftName) = \(m.ctype.swift) /* \(m.value) */", indentation: indentation)
+        swiftCode(m, indentation + "static let \(m.name.swiftName) = \(m.ctype.swift) /* \(m.value) */", indentation: indentation)
     }
 }
 
 
 /// Swift protocol representation of a record/class as a wrapper of a pointer
-public func recordProtocolCode(_ e: GIR.Record, parent: String, indentation: String = "    ") -> String {
+public func recordProtocolCode(_ e: GIR.Record, parent: String, indentation: String = "    ", declarePublic: Bool = true) -> String {
     let ctype = e.ctype.isEmpty ? e.type.swift : e.ctype.swift
     let p = (parent.isEmpty ? "" : ": \(parent)")
+    var pub: String = ""
+    if declarePublic {
+        pub = "public "
+    }
     let code = "// MARK: - \(e.name)\n" +
-        "public protocol \(e.protocolName)\(p) {\n" + (e.parentType == nil ?
+        "\(pub)protocol \(e.protocolName)\(p) {\n" + (e.parentType == nil ?
         (indentation + "var ptr: UnsafeMutablePointer<\(ctype)> { get }\n") : "") +
     "}\n\n"
     return code
@@ -425,8 +429,8 @@ public func recordProtocolCode(_ e: GIR.Record, parent: String, indentation: Str
 
 /// Default implementation for record methods as protocol extension
 public func recordProtocolExtensionCode(_ globalFunctions: [GIR.Function], _ e: GIR.Record, indentation: String = "    ") -> String {
-    let mcode = methodCode(indentation, record: e)
-    let vcode = computedPropertyCode(indentation, record: e)
+    let mcode = methodCode(indentation, record: e, declarePublic: false)
+    let vcode = computedPropertyCode(indentation, record: e, declarePublic: false)
     let allMethods = e.methods + (e.functions + globalFunctions).filter {
         let fun = $0
         return fun.args.lazy.filter({ (arg: GIR.Argument) -> Bool in
@@ -453,13 +457,17 @@ public func functionCode(_ f: GIR.Function, indentation: String = "    ", initia
 
 
 /// Swift code for methods (with a given indentation)
-public func methodCode(_ indentation: String, initialIndentation: String? = nil, record: GIR.Record? = nil, convertName: @escaping (String) -> String = { $0.camelCase }) -> (GIR.Method) -> String {
+public func methodCode(_ indentation: String, initialIndentation: String? = nil, record: GIR.Record? = nil, convertName: @escaping (String) -> String = { $0.camelCase }, declarePublic: Bool = true) -> (GIR.Method) -> String {
     let indent = initialIndentation ?? indentation
     let doubleIndent = indent + indentation
     let call = callCode(doubleIndent, record)
     let returnDeclaration = returnDeclarationCode()
     let ret = returnCode(indentation)
 
+    var pub: String = ""
+    if declarePublic {
+        pub = "public "
+    }
     return { (method: GIR.Method) -> String in
         let rawName = method.name.isEmpty ? method.cname : method.name
         let name = convertName(rawName)
@@ -486,7 +494,7 @@ public func methodCode(_ indentation: String, initialIndentation: String? = nil,
             fname = name
         }
         let deprecated = method.deprecated != nil ? "@available(*, deprecated) " : ""
-        let code = swiftCode(method, indent + "\(deprecated)public func \(fname.swift)(" +
+        let code = swiftCode(method, indent + "\(deprecated)\(pub)func \(fname.swift)(" +
             funcParam + ")\(returnDeclaration(method)) {\n" +
                 doubleIndent + call(method) +
                 indent       + ret(method)  + indent +
@@ -497,11 +505,15 @@ public func methodCode(_ indentation: String, initialIndentation: String? = nil,
 
 
 /// Swift code for computed properties
-public func computedPropertyCode(_ indentation: String, record: GIR.Record) -> (GetterSetterPair) -> String {
+public func computedPropertyCode(_ indentation: String, record: GIR.Record, declarePublic: Bool = true) -> (GetterSetterPair) -> String {
     let doubleIndent = indentation + indentation
     let gcall = callCode(doubleIndent, record)
     let scall = callSetter(doubleIndent, record)
     let ret = returnCode(doubleIndent)
+    var pub: String = ""
+    if declarePublic {
+        pub = "public "
+    }
     return { (pair: GetterSetterPair) -> String in
         let name = pair.name.swiftName
         let getter = pair.getter
@@ -525,7 +537,7 @@ public func computedPropertyCode(_ indentation: String, record: GIR.Record) -> (
         } else {
             property = gs
         }
-        let varDecl = swiftCode(property, indentation + "public var \(name): \(type) {\n", indentation: indentation)
+        let varDecl = swiftCode(property, indentation + "\(pub)var \(name): \(type) {\n", indentation: indentation)
         let deprecated = getter.deprecated != nil ? "@available(*, deprecated) " : ""
         let getterCode = swiftCode(getter, doubleIndent + "\(deprecated)get {\n" +
             doubleIndent + indentation + gcall(getter) +
@@ -549,9 +561,13 @@ public func computedPropertyCode(_ indentation: String, record: GIR.Record) -> (
 
 
 /// Swift code for convenience constructors
-public func convenienceConstructorCode(_ typeName: String, indentation: String, convenience: String = "", factory: Bool = false, convertName: @escaping (String) -> String = { $0.camelCase }) -> (GIR.Record) -> (GIR.Method) -> String {
+public func convenienceConstructorCode(_ typeName: String, indentation: String, convenience: String = "", factory: Bool = false, convertName: @escaping (String) -> String = { $0.camelCase }, declarePublic: Bool = true) -> (GIR.Record) -> (GIR.Method) -> String {
     let isConv = !convenience.isEmpty
     let conv =  isConv ? "\(convenience) " : ""
+    var pub: String = ""
+    if declarePublic {
+        pub = "public "
+    }
     return { (record: GIR.Record) -> (GIR.Method) -> String in
         let doubleIndent = indentation + indentation
         let call = callCode(doubleIndent)
@@ -600,7 +616,7 @@ public func convenienceConstructorCode(_ typeName: String, indentation: String, 
             }
             let p: String? = consPrefix == firstArgName?.swift ? nil : consPrefix
             let fact = factory ? "static func \(fname.swift)(" : "\(conv)init("
-            let code = swiftCode(method, indentation + "\(deprecated)public \(fact)" +
+            let code = swiftCode(method, indentation + "\(deprecated)\(pub)\(fact)" +
                 constructorParam(method, prefix: p) + ")\(returnDeclaration(method)) {\n" +
                     doubleIndent + call(method) +
                     indentation  + ret(method)  + indentation +
@@ -806,34 +822,34 @@ public func recordStructCode(_ e: GIR.Record, indentation: String = "    ") -> S
     let r = root ?? p
     let ctype = e.ctype.isEmpty ? e.type.swift : e.ctype.swift
     let rtype = r.ctype.isEmpty ? r.type.swift : r.ctype.swift
-    let ccode = convenienceConstructorCode(structType, indentation: indentation)(e)
-    let fcode = convenienceConstructorCode(structType, indentation: indentation, factory: true)(e)
+    let ccode = convenienceConstructorCode(structType, indentation: indentation, declarePublic: false)(e)
+    let fcode = convenienceConstructorCode(structType, indentation: indentation, factory: true, declarePublic: false)(e)
     let constructors = e.constructors.filter { $0.isConstructorOf(e) && !$0.isBareFactory }
     let factories = (e.constructors + e.methods + e.functions).filter { $0.isFactoryOf(e) }
     let code = "public struct \(structType): \(protocolName) {\n" + indentation +
         "public let ptr: UnsafeMutablePointer<\(rtype)>\n" +
     "}\n\n" +
     "public extension \(structType) {\n" + indentation +
-        "public init(_ p: UnsafeMutablePointer<\(ctype)>) {\n" + indentation + indentation +
+        "init(_ p: UnsafeMutablePointer<\(ctype)>) {\n" + indentation + indentation +
             "ptr = p" +
             (ctype == rtype ? "\n" : ".withMemoryRebound(to: \(rtype).self, capacity: 1) { $0 }\n") + indentation +
         "}\n\n" + indentation +
-        "public init<T: \(protocolName)>(_ other: T) {\n" + indentation + indentation +
+        "init<T: \(protocolName)>(_ other: T) {\n" + indentation + indentation +
             "ptr = other.ptr\n" + indentation +
         "}\n\n" + indentation +
-        "public init<T>(cPointer: UnsafeMutablePointer<T>) {\n" + indentation + indentation +
+        "init<T>(cPointer: UnsafeMutablePointer<T>) {\n" + indentation + indentation +
             "ptr = cPointer.withMemoryRebound(to: \(rtype).self, capacity: 1) { $0 }\n" + indentation +
         "}\n\n" + indentation +
-        "public init<T>(constPointer: UnsafePointer<T>) {\n" + indentation + indentation +
+        "init<T>(constPointer: UnsafePointer<T>) {\n" + indentation + indentation +
             "ptr = constPointer.withMemoryRebound(to: \(rtype).self, capacity: 1) { UnsafeMutablePointer(mutating: $0) }\n" + indentation +
         "}\n\n" + indentation +
-        "public init(raw: UnsafeRawPointer) {\n" + indentation + indentation +
+        "init(raw: UnsafeRawPointer) {\n" + indentation + indentation +
             "ptr = UnsafeMutableRawPointer(mutating: raw).assumingMemoryBound(to: \(rtype).self)\n" + indentation +
         "}\n\n" + indentation +
-        "public init(raw: UnsafeMutableRawPointer) {\n" + indentation + indentation +
+        "init(raw: UnsafeMutableRawPointer) {\n" + indentation + indentation +
             "ptr = raw.assumingMemoryBound(to: \(rtype).self)\n" + indentation +
         "}\n\n" + indentation +
-        "public init(opaquePointer: OpaquePointer) {\n" + indentation + indentation +
+        "init(opaquePointer: OpaquePointer) {\n" + indentation + indentation +
             "ptr = UnsafeMutablePointer<\(rtype)>(opaquePointer)\n" + indentation +
         "}\n\n" + indentation +
         constructors.map(ccode).joined(separator: "\n") +
@@ -909,7 +925,7 @@ public func recordClassCode(_ e: GIR.Record, parent: String, indentation: String
 //        "public typealias Class = \(protocolName)\n") +
         properties.map(scode).joined(separator: "\n") + "\n" +
     (noProperties ? "" : ("}\n\npublic extension \(protocolName) {\n" + indentation +
-        "@discardableResult public func bind<Q: PropertyNameProtocol, T: ObjectProtocol>(property source_property: \(classType)PropertyName, to target: T, _ target_property: Q, flags f: BindingFlags = .default_, transformFrom transform_from: @escaping GLibObject.ValueTransformer = { $0.transform(destValue: $1) }, transformTo transform_to: @escaping GLibObject.ValueTransformer = { $0.transform(destValue: $1) }) -> BindingRef! {\n" + doubleIndentation +
+        "@discardableResult func bind<Q: PropertyNameProtocol, T: ObjectProtocol>(property source_property: \(classType)PropertyName, to target: T, _ target_property: Q, flags f: BindingFlags = .default_, transformFrom transform_from: @escaping GLibObject.ValueTransformer = { $0.transform(destValue: $1) }, transformTo transform_to: @escaping GLibObject.ValueTransformer = { $0.transform(destValue: $1) }) -> BindingRef! {\n" + doubleIndentation +
             "func _bind(_ source: UnsafePointer<gchar>, to t: T, _ target_property: UnsafePointer<gchar>, flags f: BindingFlags = .default_, holder: BindingClosureHolder, transformFrom transform_from: @convention(c) @escaping (gpointer, gpointer, gpointer, gpointer) -> gboolean, transformTo transform_to: @convention(c) @escaping (gpointer, gpointer, gpointer, gpointer) -> gboolean) -> BindingRef! {\n" + tripleIndentation +
                 "let holder = UnsafeMutableRawPointer(Unmanaged.passRetained(holder).toOpaque())\n" + tripleIndentation +
                 "let from = unsafeBitCast(transform_from, to: BindingTransformFunc.self)\n" + tripleIndentation +
@@ -938,7 +954,7 @@ public func recordClassCode(_ e: GIR.Record, parent: String, indentation: String
         signals.map(scode).joined(separator: "\n") + "\n" +
         properties.map(ncode).joined(separator: "\n") + "\n" +
     (noSignals ? "" : ("}\n\nextension \(protocolName) {\n" + indentation +
-        "@discardableResult public func connect(signal kind: \(classType)SignalName, flags f: ConnectFlags = ConnectFlags(0), to handler: @escaping GLibObject.SignalHandler) -> CUnsignedLong {\n" + doubleIndentation +
+        "@discardableResult func connect(signal kind: \(classType)SignalName, flags f: ConnectFlags = ConnectFlags(0), to handler: @escaping GLibObject.SignalHandler) -> CUnsignedLong {\n" + doubleIndentation +
             "func _connect(signal name: UnsafePointer<gchar>, flags: ConnectFlags, data: GLibObject.SignalHandlerClosureHolder, handler: @convention(c) @escaping (gpointer, gpointer) -> Void) -> CUnsignedLong {\n" + tripleIndentation +
                 "let holder = UnsafeMutableRawPointer(Unmanaged.passRetained(data).toOpaque())\n" + tripleIndentation +
                 "let callback = unsafeBitCast(handler, to: GLibObject.Callback.self)\n" + tripleIndentation +

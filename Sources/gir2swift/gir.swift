@@ -12,6 +12,8 @@
 #endif
 import SwiftLibXML
 
+public let indentation: Int = 2
+
 extension String {
     var withoutNameSpace: String {
         guard let dot = self.enumerated().filter({ $0.1 == "." }).last else {
@@ -675,7 +677,7 @@ class ConversionContext {
 }
 
 private func indent(level: Int, _ s: String = "") -> String {
-    return String(repeating: " ", count: level * 4) + s
+    return String(repeating: " ", count: level * indentation) + s
 }
 
 extension GIR {
