@@ -953,7 +953,7 @@ public func recordClassCode(_ e: GIR.Record, parent: String, indentation: String
 //        "public typealias Class = \(protocolName)\n") +
         signals.map(scode).joined(separator: "\n") + "\n" +
         properties.map(ncode).joined(separator: "\n") + "\n" +
-    (noSignals ? "" : ("}\n\nextension \(protocolName) {\n" + indentation +
+    (noSignals ? "" : ("}\n\npublic extension \(protocolName) {\n" + indentation +
         "@discardableResult func connect(signal kind: \(classType)SignalName, flags f: ConnectFlags = ConnectFlags(0), to handler: @escaping GLibObject.SignalHandler) -> CUnsignedLong {\n" + doubleIndentation +
             "func _connect(signal name: UnsafePointer<gchar>, flags: ConnectFlags, data: GLibObject.SignalHandlerClosureHolder, handler: @convention(c) @escaping (gpointer, gpointer) -> Void) -> CUnsignedLong {\n" + tripleIndentation +
                 "let holder = UnsafeMutableRawPointer(Unmanaged.passRetained(data).toOpaque())\n" + tripleIndentation +
