@@ -205,7 +205,8 @@ public class GIR {
             let depr = node.bool(named: "deprecated")
             comment = GIR.docs(children: c)
             markedAsDeprecated = depr
-            deprecated = GIR.deprecatedDocumentation(children: c) ?? ( depr ? "This method is deprecated." : nil )
+            let deprString: String? = ( depr ? "This method is deprecated." : nil )
+            deprecated = GIR.deprecatedDocumentation(children: c) ?? deprString
             introspectable = node.bool(named: "introspectable")
             version = node.attribute(named: "version")
         }

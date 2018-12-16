@@ -457,11 +457,11 @@ func typeCastTuple(_ ctype: String, _ swiftType: String, varName: String = "rv",
         nPointers = u.pointerCount
         st = swiftType
 #if swift(>=4.2)
-#if compiler(>=5.0)
+    #if compiler(>=5.0)
         cast = varName == "rv" ? "\(varName).map { String(cString: UnsafePointer<CChar>($0)) }" : varName
-#else
+    #else
         cast = varName == "rv" ? "\(varName).map { String(cString: UnsafePointer($0)) }" : varName
-#endif
+    #endif
 #else
         cast = varName == "rv" ? "\(varName).map { String(cString: UnsafePointer($0)) }" : varName
 #endif

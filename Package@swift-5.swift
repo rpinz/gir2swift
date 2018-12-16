@@ -7,19 +7,19 @@ let package = Package(
     products: [
         .executable(
             name: "gir2swift",
-            targets: ["gir2swift"]),
+            targets: ["gir2swift"])
     ],
     dependencies: [
         .package(
             url: "https://github.com/rpinz/SwiftLibXML",
-            .branch("master")),
+            .branch("master"))
     ],
     targets: [
         .target(
             name: "gir2swift",
-            dependencies: ["SwiftLibXML"]),
+            dependencies: ["SwiftLibXML"])
     ],
     swiftLanguageVersions: [
-      .v4_2
+        .v5
     ]
 )
