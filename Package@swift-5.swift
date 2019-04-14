@@ -11,7 +11,7 @@ let package = Package(
     ],
     dependencies: [
         .package(
-            url: "https://github.com/rpinz/SwiftLibXML",
+            url: "https://github.com/GothStar/SwiftLibXML",
             .branch("master"))
     ],
     targets: [
