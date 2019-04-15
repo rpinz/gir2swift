@@ -188,7 +188,12 @@ public class GIR {
         public let version: String?         ///< availability in given version
 
         /// hash value
-        #if swift(>=4.2)
+        #if swift(>=5.0)
+        /// Hashable conformance
+        public func hash(into hasher: inout Hasher) {
+            hasher.combine(name)
+        }
+        #elseif swift(>=4.2)
         /// Hashable conformance
         public func hash(into hasher: inout Hasher) {
             hasher.combine(name)
